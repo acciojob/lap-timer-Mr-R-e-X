@@ -1,76 +1,70 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./../styles/App.css";
+import React, { useEffect, useState, useRef } from "react";
 
 const App = () => {
-  const [min, setMin] = useState(Number(0));
-  const [sec, setSec] = useState(Number(0));
-  const [ms, setMS] = useState(Number(0));
-  const [timer, setTimer] = useState(false);
-  const [lap, setLap] = useState([]);
-  let timeRef = useRef(null);
-  useEffect(() => {
-    if (timer) {
-      timeRef.current = setInterval(() => {
-        setMS((prevMS) => {
-          if (prevMS === 99) {
-            setSec((prevSec) => {
-              if (prevSec === 59) {
-                setMin((prevMin) => (prevMin += 1));
-                return 0;
-              }
-              return prevSec + 1;
-            });
-            return 0;
-          }
-          return prevMS + 1;
-        });
-      }, 10);
-    } else {
-      clearInterval(timeRef.current);
-    }
-  }, [timer]);
-  let Start = () => {
-    if (!timer) {
-      setTimer(true);
-    }
-  };
+  const [trackingTime, setTrackingTime] = useState(0);
+  const [lapItem, SetLapItem] = useState([]);
+  let intervalTime = useRef();
 
-  let Stop = () => {
-    setTimer(false);
-  };
-  let Lap = () => {
-    let time = `${min < 10 ? "0" + min : min} : ${
-      sec < 10 ? "0" + sec : sec
-    } : ${ms < 10 ? "0" + ms : ms}`;
-    setLap([...lap, time]);
-  };
-  let Reset = () => {
-    setTimer(false);
-    setMin(Number(0));
-    setSec(Number(0));
-    setMS(Number(0));
-    setLap([]);
-  };
+  useEffect(() => {
+    return () => clearInterval(intervalTime.current);
+  }, []);
+  function handleStart() {
+    clearInterval(intervalTime.current);
+    intervalTime.current = setInterval(() => {
+      setTrackingTime((prevTime) => prevTime + 1);
+    }, 10);
+  }
+  function handleStop() {
+    if (intervalTime.current) {
+      clearInterval(intervalTime.current);
+      intervalTime.current = null;
+    }
+  }
+  function handleLap() {
+    SetLapItem((prevItem) => [...prevItem, trackingTime]);
+  }
+  function handleReset() {
+    clearInterval(intervalTime.current);
+    intervalTime.current = null;
+    setTrackingTime(0);
+    SetLapItem([]);
+  }
+  function pad(number) {
+    // add a leading zero if the number is less than 10
+    return (number < 10 ? "0" : "") + number;
+  }
 
   return (
     <div>
-      <p>
-        {" "}
-        {min < 10 ? "0" + min : min} : {sec < 10 ? "0" + sec : sec} :{" "}
-        {ms < 10 ? "0" + ms : ms}{" "}
-      </p>
+      {`${pad(Math.floor(trackingTime / 360000))}:${pad(
+        Math.floor((trackingTime / 6000) % 60)
+      )}:${pad(Math.floor((trackingTime / 100) % 60))}:${pad(
+        trackingTime % 100
+      )}`}
       <div>
-        <button onClick={() => Start()}>Start</button>
-        <button onClick={() => Stop()}>Stop</button>
-        <button onClick={() => Lap()}>Lap</button>
-        <button onClick={() => Reset()}>Reset</button>
+        The lap items are :
+        {lapItem.map((item, index) => {
+          return (
+            <ul>
+              {" "}
+              <li>
+                {" "}
+                <p>{`${pad(Math.floor(item / 360000))}:${pad(
+                  Math.floor((item / 6000) % 60)
+                )}:${pad(Math.floor((item / 100) % 60))}:${pad(
+                  item % 100
+                )}`}</p>
+              </li>{" "}
+            </ul>
+          );
+        })}{" "}
       </div>
-      <div>
-        <ul>
-          {lap.map((item, index) => {
-            return <li key={index}>{item}</li>;
-          })}
-        </ul>
+
+      <div id="root">
+        <button onClick={handleStart}>Start</button>
+        <button onClick={handleStop}>Stop</button>
+        <button onClick={handleLap}>Lap</button>
+        <button onClick={handleReset}>Reset</button>
       </div>
     </div>
   );
